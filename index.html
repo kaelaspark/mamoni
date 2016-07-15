@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+  <head>
+	<title>Mamoni Map</title>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+	<link rel="shortcut icon" href="http://www.sparkgeo.com/static/img/thumbnail.png">
+	<link rel="stylesheet" type="text/css" href="css/map-icons.css" />
+	<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
+	<style>
+	  html, body, #map {height: 100%; padding: 0; margin: 0;}
+	  #layer_selector {position: absolute; top: 10px; right: 10px; padding: 0;}
+	  #layer_selector ul {padding: 0; margin: 0; list-style-type: none;}
+	  #layer_selector li {border-bottom: 1px solid #999; padding: 10px 20px; font-family: "Helvetica", Arial; font-size: 20px; color: #444; cursor: auto;}
+	  #layer_selector li i {pointer-events: none;}
+	  .title{display: inline; pointer-events: none; font-size: 13px;}
+	  #layer_selector li:hover {background-color: #F0F0F0; cursor: pointer;}
+	  #layer_selector li.selected {background-color: #EEE;}
+	  #layer_selector li.drop {text-indent: 20px;}
+      a {text-decoration: none; color: #444;}
+
+	  /*@media (max-width: 40em) {*/
+		   /*#layer_selector {text-align: center; margin: auto}*/
+		  /*.title1 {display: inline; font-size: 11px;}*/
+		  /*.title2 {display: none;}*/
+		  /*#roadrunners {display: none;}*/
+		  /*#layer_selector li.drop {text-indent: 0px;}*/
+		  /*.spk{bottom: 25px;}*/
+	  /*}*/
+	</style>
+	<link rel="stylesheet" href="http://libs.cartocdn.com/cartodb.js/v3/3.14/themes/css/cartodb.css" />
+	<link rel="stylesheet" href="css/locate.min.css" />
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+	<script>
+	$(document).ready(function(){
+		$("button").click(function(){
+			$(".togglelist").toggle();
+		});
+	});
+	</script>
+  </head>
+  <body>
+	<div id="map"></div>
+	<div id="layer_selector" class="cartodb-infobox">
+	  <ul class="togglelist">
+		<li id="streams"><a href="#" class="title">Streams</a></li>
+		<li id="roads"><a href="#" class="title">Roads</a></li>
+		<li id="pueblos"><a href="#" class="title">Pueblos</a></li>
+		<li id="watershed"><a href="#" class="title">Watershed</a></li>
+	  </ul>
+	</div>
+	<script src="http://libs.cartocdn.com/cartodb.js/v3/3.14/cartodb.js"></script>
+	<script src="js/locate.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+	<script>
+	var map;
+
+	function main() {
+
+		// build simple map
+		var map = new L.Map('map', {
+		  center: [9.29, -79.18],
+		  zoom: 15,
+//		  maxZoom: 19,
+//		  minZoom: 10,
+//		  layers: initialLayer,
+		  attributionControl: false,
+		});
+
+		map.fitBounds([
+			[9.23, -79.29],
+			[9.35, -79.08]
+		]);
+
+		L.tileLayer('http://mamoni.imagery.sparkgeo.com/k_out_3857/{z}/{x}/{y}.png', {minZoom: 10, maxZoom: 19, zIndex:0, tms:true}).addTo(map)
+
+		// carto data
+
+        var streamData, roadData, puebloData, watershedData;
+
+		var base = cartodb.createLayer(map, 'https://mvpmapteam.carto.com/api/v2/viz/bf5337bc-4aa3-11e6-9447-0ecd1babdde5/viz.json',{
+			mobile_layout: false,
+			legends: false,
+			cartodb_logo: false,
+			zIndex: 999,
+//            sublayers: [{
+//              sql : 'SELECT * FROM all_streams_current',
+//              cartocss : '#all_streams_current { line-width: 2; line-color: #00a9ff; }'
+//            }, {
+//              sql : 'SELECT * FROM all_roads_current',
+//              cartocss : '#all_roads_current { line-width: 2; line-color: #ff0098; }'
+//            }]
+		}).on('done', function(layer){
+            streamData= layer.getSubLayer(0);
+            roadData = layer.getSubLayer(2);
+			puebloData = layer.getSubLayer(3);
+			watershedData = layer.getSubLayer(1);
+            }).addTo(map);
+
+            var visible = {
+            streams : true,
+            roads : true,
+			pueblos :true,
+			watershed : true
+          };
+
+		// button toggles
+          $('#streams').on('click', function(e) {
+            if (visible.streams) {
+              streamData.hide();
+              visible.streams = false;
+            } else if (!visible.streams) {
+              streamData.show();
+              visible.streams = true;
+            }
+            return false;
+          });
+
+          $('#roads').on('click', function(e) {
+            if (visible.roads) {
+              roadData.hide();
+              visible.roads = false;
+            } else if (!visible.roads) {
+              roadData.show();
+              visible.roads = true;
+            }
+            return false;
+          });
+
+          $('#pueblos').on('click', function(e) {
+            if (visible.pueblos) {
+              puebloData.hide();
+              visible.pueblos = false;
+            } else if (!visible.pueblos) {
+              puebloData.show();
+              visible.pueblos = true;
+            }
+            return false;
+          });
+
+          $('#watershed').on('click', function(e) {
+            if (visible.watershed) {
+              watershedData.hide();
+              visible.watershed = false;
+            } else if (!visible.watershed) {
+              watershedData.show();
+              visible.watershed = true;
+            }
+            return false;
+          });
+
+		//branding
+		var logo= L.control({
+			position : 'bottomright'
+		});
+		logo.onAdd = function(map) {
+			this._div = L.DomUtil.create('div', 'spk');
+			var img_log = "<div class='spk'><img src='http://images.sparkgeo.com/poweredby_transparent_100w.png?src=otway'></img></div>";
+			this._div.innerHTML = img_log;
+			return this._div;
+		};
+		logo.addTo(map);
+
+	}
+	window.onload = main;
+
+	</script>
+	<script type="text/javascript">
+	var _gaq = _gaq || [];
+	_gaq.push(['_setAccount', 'UA-18772405-2']);
+	_gaq.push(['_trackPageview']);
+
+	(function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	})();
+	</script>
+  </body>
+</html>
